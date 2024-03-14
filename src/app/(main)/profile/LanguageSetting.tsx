@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button, Dropdown, Item, Flexbox } from 'react-basics';
-import { useLocale, useMessages } from 'components/hooks';
-import { DEFAULT_LOCALE } from 'lib/constants';
-import { languages } from 'lib/lang';
+import { useLocale, useMessages } from '@/components/hooks';
+import { DEFAULT_LOCALE } from '@/lib/constants';
+import { languages } from '@/lib/lang';
 import styles from './LanguageSetting.module.css';
 
 export function LanguageSetting() {
@@ -20,7 +20,7 @@ export function LanguageSetting() {
 
   const handleReset = () => saveLocale(DEFAULT_LOCALE);
 
-  const renderValue = (value: string | number) => languages[value].label;
+  const renderValue = (value: string | number) => languages?.[value]?.label;
 
   return (
     <Flexbox gap={10}>

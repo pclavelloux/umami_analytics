@@ -10,8 +10,8 @@ import {
   SubmitButton,
   Button,
 } from 'react-basics';
-import { useApi, useMessages } from 'components/hooks';
-import { ROLES } from 'lib/constants';
+import { useApi, useMessages } from '@/components/hooks';
+import { ROLES } from '@/lib/constants';
 
 export function UserAddForm({ onSave, onClose }) {
   const { post, useMutation } = useApi();
@@ -34,7 +34,7 @@ export function UserAddForm({ onSave, onClose }) {
       return formatMessage(labels.user);
     }
     if (value === ROLES.admin) {
-      return formatMessage(labels.administrator);
+      return formatMessage(labels.admin);
     }
     if (value === ROLES.viewOnly) {
       return formatMessage(labels.viewOnly);
@@ -58,7 +58,7 @@ export function UserAddForm({ onSave, onClose }) {
           <Dropdown renderValue={renderValue}>
             <Item key={ROLES.viewOnly}>{formatMessage(labels.viewOnly)}</Item>
             <Item key={ROLES.user}>{formatMessage(labels.user)}</Item>
-            <Item key={ROLES.admin}>{formatMessage(labels.administrator)}</Item>
+            <Item key={ROLES.admin}>{formatMessage(labels.admin)}</Item>
           </Dropdown>
         </FormInput>
       </FormRow>

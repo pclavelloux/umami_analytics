@@ -1,14 +1,18 @@
 import { produce } from 'immer';
 import { useCallback, useEffect, useState } from 'react';
-import { useApi } from './useApi';
+import { useApi } from '../useApi';
 import { useTimezone } from '../useTimezone';
 import { useMessages } from '../useMessages';
+import { parseDateRange } from '@/lib/date';
 
-export function useReport(reportId: string, defaultParameters: { [key: string]: any }) {
+export function useReport(
+  reportId: string,
+  defaultParameters?: { type: string; parameters: { [key: string]: any } },
+) {
   const [report, setReport] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const { get, post } = useApi();
-  const [timezone] = useTimezone();
+  const { timezone } = useTimezone();
   const { formatMessage, labels } = useMessages();
 
   const baseParameters = {
@@ -21,12 +25,12 @@ export function useReport(reportId: string, defaultParameters: { [key: string]: 
     const data: any = await get(`/reports/${id}`);
 
     const { dateRange } = data?.parameters || {};
-    const { startDate, endDate } = dateRange || {};
 
-    if (startDate && endDate) {
-      dateRange.startDate = new Date(startDate);
-      dateRange.endDate = new Date(endDate);
-    }
+    data.parameters = {
+      ...defaultParameters?.parameters,
+      ...data.parameters,
+      dateRange: parseDateRange(dateRange.value),
+    };
 
     setReport(data);
   };
@@ -41,7 +45,7 @@ export function useReport(reportId: string, defaultParameters: { [key: string]: 
 
       setReport(
         produce((state: any) => {
-          state.parameters = parameters;
+          state.parameters = { ...defaultParameters?.parameters, ...parameters };
           state.data = data;
 
           return state;
@@ -60,7 +64,11 @@ export function useReport(reportId: string, defaultParameters: { [key: string]: 
           const { parameters, ...rest } = data;
 
           if (parameters) {
-            state.parameters = { ...state.parameters, ...parameters };
+            state.parameters = {
+              ...defaultParameters?.parameters,
+              ...state.parameters,
+              ...parameters,
+            };
           }
 
           for (const key in rest) {
@@ -80,7 +88,7 @@ export function useReport(reportId: string, defaultParameters: { [key: string]: 
     } else {
       loadReport(reportId);
     }
-  }, []);
+  }, [reportId]);
 
   return { report, runReport, updateReport, isRunning };
 }

@@ -3,27 +3,31 @@
     screen: { width, height },
     navigator: { language },
     location,
-    localStorage,
     document,
     history,
+    top,
   } = window;
-  const { hostname, pathname, search } = location;
-  const { currentScript } = document;
+  const { hostname, href, origin } = location;
+  const { currentScript, referrer } = document;
+  const localStorage = href.startsWith('data:') ? undefined : window.localStorage;
 
   if (!currentScript) return;
 
   const _data = 'data-';
   const _false = 'false';
+  const _true = 'true';
   const attr = currentScript.getAttribute.bind(currentScript);
   const website = attr(_data + 'website-id');
   const hostUrl = attr(_data + 'host-url');
+  const tag = attr(_data + 'tag');
   const autoTrack = attr(_data + 'auto-track') !== _false;
+  const excludeSearch = attr(_data + 'exclude-search') === _true;
+  const excludeHash = attr(_data + 'exclude-hash') === _true;
   const domain = attr(_data + 'domains') || '';
   const domains = domain.split(',').map(n => n.trim());
-  const root = hostUrl
-    ? hostUrl.replace(/\/$/, '')
-    : currentScript.src.split('/').slice(0, -1).join('/');
-  const endpoint = `${root}/api/send`;
+  const host =
+    hostUrl || '__COLLECT_API_HOST__' || currentScript.src.split('/').slice(0, -1).join('/');
+  const endpoint = `${host.replace(/\/$/, '')}__COLLECT_API_ENDPOINT__`;
   const screen = `${width}x${height}`;
   const eventRegex = /data-umami-event-([\w-_]+)/;
   const eventNameAttribute = _data + 'umami-event';
@@ -31,22 +35,15 @@
 
   /* Helper functions */
 
-  const getPath = url => {
-    try {
-      return new URL(url).pathname;
-    } catch (e) {
-      return url;
-    }
-  };
-
   const getPayload = () => ({
     website,
-    hostname,
     screen,
     language,
-    title: encodeURIComponent(title),
-    url: encodeURI(currentUrl),
-    referrer: encodeURI(currentRef),
+    title,
+    hostname,
+    url: currentUrl,
+    referrer: currentRef,
+    tag: tag ? tag : undefined,
   });
 
   /* Event handlers */
@@ -55,7 +52,17 @@
     if (!url) return;
 
     currentRef = currentUrl;
-    currentUrl = getPath(url.toString());
+    currentUrl = new URL(url, location.href);
+
+    if (excludeSearch) {
+      currentUrl.search = '';
+    }
+
+    if (excludeHash) {
+      currentUrl.hash = '';
+    }
+
+    currentUrl = currentUrl.toString();
 
     if (currentUrl !== currentRef) {
       setTimeout(track, delayDuration);
@@ -152,7 +159,9 @@
                   e.preventDefault();
                 }
                 return trackElement(parentElement).then(() => {
-                  if (!external) location.href = href;
+                  if (!external) {
+                    (target === '_top' ? top.location : location).href = href;
+                  }
                 });
               }
             } else if (parentElement.tagName === 'BUTTON') {
@@ -170,28 +179,48 @@
   /* Tracking functions */
 
   const trackingDisabled = () =>
+    disabled ||
+    !website ||
     (localStorage && localStorage.getItem('umami.disabled')) ||
     (domain && !domains.includes(hostname));
 
   const send = async (payload, type = 'event') => {
     if (trackingDisabled()) return;
+
     const headers = {
       'Content-Type': 'application/json',
     };
+
     if (typeof cache !== 'undefined') {
       headers['x-umami-cache'] = cache;
     }
+
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify({ type, payload }),
         headers,
+        credentials: 'omit',
       });
-      const text = await res.text();
 
-      return (cache = text);
-    } catch {
+      const data = await res.json();
+
+      if (data) {
+        disabled = !!data.disabled;
+        cache = data.cache;
+      }
+    } catch (e) {
       /* empty */
+    }
+  };
+
+  const init = () => {
+    if (!initialized) {
+      track();
+      handlePathChanges();
+      handleTitleChanges();
+      handleClicks();
+      initialized = true;
     }
   };
 
@@ -221,26 +250,18 @@
     };
   }
 
-  let currentUrl = `${pathname}${search}`;
-  let currentRef = document.referrer;
+  let currentUrl = href;
+  let currentRef = referrer.startsWith(origin) ? '' : referrer;
   let title = document.title;
   let cache;
   let initialized;
+  let disabled = false;
 
   if (autoTrack && !trackingDisabled()) {
-    handlePathChanges();
-    handleTitleChanges();
-    handleClicks();
-
-    const init = () => {
-      if (document.readyState === 'complete' && !initialized) {
-        track();
-        initialized = true;
-      }
-    };
-
-    document.addEventListener('readystatechange', init, true);
-
-    init();
+    if (document.readyState === 'complete') {
+      init();
+    } else {
+      document.addEventListener('readystatechange', init, true);
+    }
   }
 })(window);

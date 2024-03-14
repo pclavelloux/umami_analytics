@@ -1,20 +1,22 @@
 import { Key } from 'react';
 import { Text, Icon, Button, Popup, Menu, Item, PopupTrigger, Flexbox } from 'react-basics';
 import classNames from 'classnames';
-import Icons from 'components/icons';
-import { useLogin, useMessages, useTeams, useTeamUrl } from 'components/hooks';
+import Icons from '@/components/icons';
+import { useLogin, useMessages, useTeams, useTeamUrl } from '@/components/hooks';
 import styles from './TeamsButton.module.css';
 
 export function TeamsButton({
   className,
+  showText = true,
   onChange,
 }: {
   className?: string;
+  showText?: boolean;
   onChange?: (value: string) => void;
 }) {
   const { user } = useLogin();
   const { formatMessage, labels } = useMessages();
-  const { result } = useTeams(user?.id);
+  const { result } = useTeams(user.id);
   const { teamId } = useTeamUrl();
   const team = result?.data?.find(({ id }) => id === teamId);
 
@@ -31,7 +33,7 @@ export function TeamsButton({
     <PopupTrigger>
       <Button className={classNames(styles.button, className)} variant="quiet">
         <Icon>{teamId ? <Icons.Users /> : <Icons.User />}</Icon>
-        <Text>{teamId ? team?.name : user.username}</Text>
+        {showText && <Text>{teamId ? team?.name : user.username}</Text>}
         <Icon>
           <Icons.ChevronDown />
         </Icon>
