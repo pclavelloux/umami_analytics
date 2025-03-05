@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 <p align="center">
   <img src="https://content.umami.is/website/images/umami-logo.png" alt="Umami Logo" width="100">
 </p>
+=======
+# umami 
+>>>>>>> cfa2610e (test2)
 
 <h1 align="center">Umami</h1>
 
