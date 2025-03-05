@@ -1,25 +1,32 @@
-import { Icons, Icon, Text, Dropdown, Item } from 'react-basics';
-import BrowsersTable from 'components/metrics/BrowsersTable';
-import CountriesTable from 'components/metrics/CountriesTable';
-import RegionsTable from 'components/metrics/RegionsTable';
-import CitiesTable from 'components/metrics/CitiesTable';
-import DevicesTable from 'components/metrics/DevicesTable';
-import LanguagesTable from 'components/metrics/LanguagesTable';
-import OSTable from 'components/metrics/OSTable';
-import PagesTable from 'components/metrics/PagesTable';
-import QueryParametersTable from 'components/metrics/QueryParametersTable';
-import ReferrersTable from 'components/metrics/ReferrersTable';
-import ScreenTable from 'components/metrics/ScreenTable';
-import EventsTable from 'components/metrics/EventsTable';
-import SideNav from 'components/layout/SideNav';
-import { useNavigation, useMessages, useLocale } from 'components/hooks';
-import LinkButton from 'components/common/LinkButton';
+import { Dropdown, Icon, Icons, Item, Text } from 'react-basics';
+import LinkButton from '@/components/common/LinkButton';
+import { useLocale, useMessages, useNavigation } from '@/components/hooks';
+import SideNav from '@/components/layout/SideNav';
+import BrowsersTable from '@/components/metrics/BrowsersTable';
+import CitiesTable from '@/components/metrics/CitiesTable';
+import CountriesTable from '@/components/metrics/CountriesTable';
+import DevicesTable from '@/components/metrics/DevicesTable';
+import EventsTable from '@/components/metrics/EventsTable';
+import HostsTable from '@/components/metrics/HostsTable';
+import LanguagesTable from '@/components/metrics/LanguagesTable';
+import OSTable from '@/components/metrics/OSTable';
+import PagesTable from '@/components/metrics/PagesTable';
+import QueryParametersTable from '@/components/metrics/QueryParametersTable';
+import ReferrersTable from '@/components/metrics/ReferrersTable';
+import RegionsTable from '@/components/metrics/RegionsTable';
+import ScreenTable from '@/components/metrics/ScreenTable';
+import TagsTable from '@/components/metrics/TagsTable';
+import ChannelsTable from '@/components/metrics/ChannelsTable';
 import styles from './WebsiteExpandedView.module.css';
 
 const views = {
   url: PagesTable,
+  entry: PagesTable,
+  exit: PagesTable,
   title: PagesTable,
   referrer: ReferrersTable,
+  grouped: ReferrersTable,
+  host: HostsTable,
   browser: BrowsersTable,
   os: OSTable,
   device: DevicesTable,
@@ -30,6 +37,8 @@ const views = {
   language: LanguagesTable,
   event: EventsTable,
   query: QueryParametersTable,
+  tag: TagsTable,
+  channel: ChannelsTable,
 };
 
 export default function WebsiteExpandedView({
@@ -44,7 +53,6 @@ export default function WebsiteExpandedView({
   const {
     router,
     renderUrl,
-    pathname,
     query: { view },
   } = useNavigation();
 
@@ -58,6 +66,11 @@ export default function WebsiteExpandedView({
       key: 'referrer',
       label: formatMessage(labels.referrers),
       url: renderUrl({ view: 'referrer' }),
+    },
+    {
+      key: 'channel',
+      label: formatMessage(labels.channels),
+      url: renderUrl({ view: 'channel' }),
     },
     {
       key: 'browser',
@@ -109,6 +122,16 @@ export default function WebsiteExpandedView({
       label: formatMessage(labels.queryParameters),
       url: renderUrl({ view: 'query' }),
     },
+    {
+      key: 'host',
+      label: formatMessage(labels.hosts),
+      url: renderUrl({ view: 'host' }),
+    },
+    {
+      key: 'tag',
+      label: formatMessage(labels.tags),
+      url: renderUrl({ view: 'tag' }),
+    },
   ];
 
   const DetailsComponent = views[view] || (() => null);
@@ -122,7 +145,12 @@ export default function WebsiteExpandedView({
   return (
     <div className={styles.layout}>
       <div className={styles.menu}>
-        <LinkButton href={pathname} className={styles.back} variant="quiet" scroll={false}>
+        <LinkButton
+          href={renderUrl({ view: undefined })}
+          className={styles.back}
+          variant="quiet"
+          scroll={false}
+        >
           <Icon rotate={dir === 'rtl' ? 0 : 180}>
             <Icons.ArrowRight />
           </Icon>

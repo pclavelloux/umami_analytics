@@ -1,22 +1,21 @@
-import styles from './Favicon.module.css';
+import { GROUPED_DOMAINS } from '@/lib/constants';
 
 function getHostName(url: string) {
-  const match = url.match(/^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:/\n?=]+)/im);
+  const match = url.match(/^(?:https?:\/\/)?(?:[^@\n]+@)?([^:/\n?=]+)/im);
   return match && match.length > 1 ? match[1] : null;
 }
 
 export function Favicon({ domain, ...props }) {
-  const hostName = domain ? getHostName(domain) : null;
+  if (process.env.privateMode) {
+    return null;
+  }
 
-  return hostName ? (
-    <img
-      className={styles.favicon}
-      src={`https://icons.duckduckgo.com/ip3/${hostName}.ico`}
-      height="16"
-      alt=""
-      {...props}
-    />
-  ) : null;
+  const hostName = domain ? getHostName(domain) : null;
+  const src = hostName
+    ? `https://icons.duckduckgo.com/ip3/${GROUPED_DOMAINS[hostName]?.domain || hostName}.ico`
+    : null;
+
+  return hostName ? <img src={src} width={16} height={16} alt="" {...props} /> : null;
 }
 
 export default Favicon;

@@ -1,20 +1,22 @@
 'use client';
+import { useEffect } from 'react';
 import { Icon, Text } from 'react-basics';
 import Link from 'next/link';
 import classNames from 'classnames';
-import HamburgerButton from 'components/common/HamburgerButton';
-import ThemeButton from 'components/input/ThemeButton';
-import LanguageButton from 'components/input/LanguageButton';
-import ProfileButton from 'components/input/ProfileButton';
-import TeamsButton from 'components/input/TeamsButton';
-import Icons from 'components/icons';
-import { useMessages, useNavigation, useTeamUrl } from 'components/hooks';
+import HamburgerButton from '@/components/common/HamburgerButton';
+import ThemeButton from '@/components/input/ThemeButton';
+import LanguageButton from '@/components/input/LanguageButton';
+import ProfileButton from '@/components/input/ProfileButton';
+import TeamsButton from '@/components/input/TeamsButton';
+import Icons from '@/components/icons';
+import { useMessages, useNavigation, useTeamUrl } from '@/components/hooks';
+import { getItem, setItem } from '@/lib/storage';
 import styles from './NavBar.module.css';
 
 export function NavBar() {
   const { formatMessage, labels } = useMessages();
   const { pathname, router } = useNavigation();
-  const { renderTeamUrl } = useTeamUrl();
+  const { teamId, renderTeamUrl } = useTeamUrl();
 
   const cloudMode = !!process.env.cloudMode;
 
@@ -34,25 +36,38 @@ export function NavBar() {
       label: formatMessage(labels.settings),
       url: renderTeamUrl('/settings'),
       children: [
+        ...(teamId
+          ? [
+              {
+                label: formatMessage(labels.team),
+                url: renderTeamUrl('/settings/team'),
+              },
+            ]
+          : []),
         {
           label: formatMessage(labels.websites),
-          url: '/settings/websites',
+          url: renderTeamUrl('/settings/websites'),
         },
-        {
-          label: formatMessage(labels.teams),
-          url: '/settings/teams',
-        },
-        {
-          label: formatMessage(labels.users),
-          url: '/settings/users',
-        },
-        {
-          label: formatMessage(labels.profile),
-          url: '/profile',
-        },
+        ...(!teamId
+          ? [
+              {
+                label: formatMessage(labels.teams),
+                url: renderTeamUrl('/settings/teams'),
+              },
+              {
+                label: formatMessage(labels.users),
+                url: '/settings/users',
+              },
+            ]
+          : [
+              {
+                label: formatMessage(labels.members),
+                url: renderTeamUrl('/settings/members'),
+              },
+            ]),
       ],
     },
-    cloudMode && {
+    {
       label: formatMessage(labels.profile),
       url: '/profile',
     },
@@ -61,9 +76,23 @@ export function NavBar() {
 
   const handleTeamChange = (teamId: string) => {
     const url = teamId ? `/teams/${teamId}` : '/';
-
+    if (!cloudMode) {
+      setItem('umami.team', { id: teamId });
+    }
     router.push(cloudMode ? `${process.env.cloudUrl}${url}` : url);
   };
+
+  useEffect(() => {
+    if (!cloudMode) {
+      const teamIdLocal = getItem('umami.team')?.id;
+
+      if (teamIdLocal && teamIdLocal !== teamId) {
+        router.push(
+          pathname !== '/' && pathname !== '/dashboard' ? '/' : `/teams/${teamIdLocal}/dashboard`,
+        );
+      }
+    }
+  }, [cloudMode]);
 
   return (
     <div className={styles.navbar}>
@@ -94,6 +123,7 @@ export function NavBar() {
         <ProfileButton />
       </div>
       <div className={styles.mobile}>
+        <TeamsButton onChange={handleTeamChange} showText={false} />
         <HamburgerButton menuItems={menuItems} />
       </div>
     </div>
